@@ -1,0 +1,29 @@
+{
+  "name": "@flowcache/cache-node",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@flowcache/shared": "1.0.0",
+    "@flowcache/storage-engine": "1.0.0",
+    "@flowcache/eviction": "1.0.0",
+    "@flowcache/consistent-hash": "1.0.0",
+    "@flowcache/metrics": "1.0.0",
+    "@flowcache/snapshot": "1.0.0",
+    "@flowcache/worker-pool": "1.0.0",
+    "@flowcache/replication": "1.0.0",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.0.0",
+    "tsx": "^4.23.11"
+  }
+}

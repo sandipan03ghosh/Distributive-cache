@@ -1,0 +1,196 @@
+# FlowCache — full local cluster
+#
+# `docker compose up --build` brings up:
+#   kafka                     — Kafka broker, KRaft mode (async replication bus)
+#   cache-node-1/2/3          — the actual distributed cache, 3 nodes
+#   gateway                   — API gateway / consistent hash router
+#   dashboard                 — React dashboard (nginx, port 8080)
+#
+# All cache nodes and the gateway derive the SAME ring membership from
+# the identical STATIC_NODES value below — see the note in
+# packages/shared/src/config.ts (parseStaticNodes).
+#
+# Kafka runs in KRaft (self-managed metadata quorum) mode, not the
+# legacy ZooKeeper-coordinated mode — cp-kafka:8.x (Apache Kafka 4.x)
+# dropped ZooKeeper support entirely, so there's no separate zookeeper
+# service. This is a single-node "combined mode" broker+controller,
+# appropriate for local dev/testing (production KRaft normally splits
+# broker/controller roles across dedicated nodes with an odd-sized
+# controller quorum). CLUSTER_ID is a fixed, valid-format cluster ID
+# (the same one used in Confluent's own KRaft quickstart examples) —
+# the container formats its own storage on first boot using it.
+# Every other service still just talks to kafka:9092 exactly as
+# before; nothing outside this one service definition changed.
+
+services:
+  kafka:
+    image: confluentinc/cp-kafka:8.3.1
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    networks: [flowcache-net]
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  cache-node-1:
+    build:
+      context: .
+      dockerfile: docker/cache-node.Dockerfile
+    hostname: cache-node-1
+    environment:
+      NODE_ID: node-1
+      HOST: 0.0.0.0
+      PORT: "4001"
+      NODE_WEIGHT: "1"
+      MAX_MEMORY_BYTES: "134217728"
+      VIRTUAL_NODE_COUNT: "128"
+      SNAPSHOT_INTERVAL_MS: "60000"
+      SNAPSHOT_DIR: /data/snapshots/node-1
+      SNAPSHOT_COMPRESS: "true"
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: flowcache-node-1
+      KAFKA_CONSUMER_GROUP: flowcache-node-1-group
+      WORKER_POOL_SIZE: "4"
+      GATEWAY_URL: http://gateway:4000
+      STATIC_NODES: "node-1:cache-node-1:4001:1,node-2:cache-node-2:4001:1,node-3:cache-node-3:4001:1"
+      LOG_LEVEL: info
+    volumes:
+      - node1-snapshots:/data/snapshots
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks: [flowcache-net]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  cache-node-2:
+    build:
+      context: .
+      dockerfile: docker/cache-node.Dockerfile
+    hostname: cache-node-2
+    environment:
+      NODE_ID: node-2
+      HOST: 0.0.0.0
+      PORT: "4001"
+      NODE_WEIGHT: "1"
+      MAX_MEMORY_BYTES: "134217728"
+      VIRTUAL_NODE_COUNT: "128"
+      SNAPSHOT_INTERVAL_MS: "60000"
+      SNAPSHOT_DIR: /data/snapshots/node-2
+      SNAPSHOT_COMPRESS: "true"
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: flowcache-node-2
+      KAFKA_CONSUMER_GROUP: flowcache-node-2-group
+      WORKER_POOL_SIZE: "4"
+      GATEWAY_URL: http://gateway:4000
+      STATIC_NODES: "node-1:cache-node-1:4001:1,node-2:cache-node-2:4001:1,node-3:cache-node-3:4001:1"
+      LOG_LEVEL: info
+    volumes:
+      - node2-snapshots:/data/snapshots
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks: [flowcache-net]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  cache-node-3:
+    build:
+      context: .
+      dockerfile: docker/cache-node.Dockerfile
+    hostname: cache-node-3
+    environment:
+      NODE_ID: node-3
+      HOST: 0.0.0.0
+      PORT: "4001"
+      NODE_WEIGHT: "1"
+      MAX_MEMORY_BYTES: "134217728"
+      VIRTUAL_NODE_COUNT: "128"
+      SNAPSHOT_INTERVAL_MS: "60000"
+      SNAPSHOT_DIR: /data/snapshots/node-3
+      SNAPSHOT_COMPRESS: "true"
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CLIENT_ID: flowcache-node-3
+      KAFKA_CONSUMER_GROUP: flowcache-node-3-group
+      WORKER_POOL_SIZE: "4"
+      GATEWAY_URL: http://gateway:4000
+      STATIC_NODES: "node-1:cache-node-1:4001:1,node-2:cache-node-2:4001:1,node-3:cache-node-3:4001:1"
+      LOG_LEVEL: info
+    volumes:
+      - node3-snapshots:/data/snapshots
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks: [flowcache-net]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    hostname: gateway
+    environment:
+      HOST: 0.0.0.0
+      PORT: "4000"
+      VIRTUAL_NODE_COUNT: "128"
+      HEALTH_CHECK_INTERVAL_MS: "5000"
+      HEALTH_CHECK_TIMEOUT_MS: "2000"
+      SUSPECT_AFTER_MISSES: "2"
+      DEAD_AFTER_MISSES: "5"
+      STATIC_NODES: "node-1:cache-node-1:4001:1,node-2:cache-node-2:4001:1,node-3:cache-node-3:4001:1"
+      LOG_LEVEL: info
+    ports:
+      - "4000:4000"
+    depends_on:
+      - cache-node-1
+      - cache-node-2
+      - cache-node-3
+    networks: [flowcache-net]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard.Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - gateway
+    networks: [flowcache-net]
+
+networks:
+  flowcache-net:
+    driver: bridge
+
+volumes:
+  node1-snapshots:
+  node2-snapshots:
+  node3-snapshots:

@@ -1,0 +1,40 @@
+{
+  "name": "flowcache",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FlowCache — an adaptive distributed cache with dynamic eviction policies",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/gateway",
+    "apps/dashboard"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "build:dashboard": "npm run build -w apps/dashboard",
+    "clean": "npm run clean --workspaces --if-present",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:stress": "vitest run tests/stress",
+    "lint": "eslint . --ext .ts,.tsx",
+    "dev:gateway": "npm run dev -w apps/gateway",
+    "dev:cache-node": "npm run dev -w services/cache-node",
+    "dev:dashboard": "npm run dev -w apps/dashboard",
+    "docker:build": "docker compose -f docker-compose.yml build",
+    "docker:up": "docker compose -f docker-compose.yml up",
+    "docker:down": "docker compose -f docker-compose.yml down -v"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.10",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.8.0",
+    "typescript-eslint": "^8.66.0",
+    "tsx": "^4.23.11"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

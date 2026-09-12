@@ -1,0 +1,16 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/storage-engine" },
+    { "path": "packages/eviction" },
+    { "path": "packages/consistent-hash" },
+    { "path": "packages/metrics" },
+    { "path": "packages/snapshot" },
+    { "path": "packages/worker-pool" },
+    { "path": "packages/replication" },
+    { "path": "packages/benchmark" },
+    { "path": "services/cache-node" },
+    { "path": "apps/gateway" }
+  ]
+}

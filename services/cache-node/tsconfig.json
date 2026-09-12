@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/storage-engine" },
+    { "path": "../../packages/eviction" },
+    { "path": "../../packages/consistent-hash" },
+    { "path": "../../packages/metrics" },
+    { "path": "../../packages/snapshot" },
+    { "path": "../../packages/worker-pool" },
+    { "path": "../../packages/replication" }
+  ]
+}
